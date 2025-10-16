@@ -1,1 +1,12 @@
 utility_analysis/outputs
+google_images
+imagenet-a
+imagenet-o
+fractals_and_fvis
+run_big
+run_small
+outputs_*
+slurm_outputs_*
+outputs
+__pycache__
+slurm_outputs
