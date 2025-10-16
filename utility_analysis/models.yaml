@@ -334,10 +334,16 @@ qwen25-vl-7b-instruct:
   path: "Qwen/Qwen2.5-VL-7B-Instruct"
   gpu_count: 1
 
+qwen25-vl-32b-instruct:
+  model_name: "Qwen/Qwen2.5-VL-32B-Instruct"
+  model_type: vllm
+  path: "/data/huggingface/models--Qwen--Qwen2.5-VL-32B-Instruct/snapshots/7cfb30d71a1f4f49a57592323337a4a4727301da"
+  gpu_count: 1
+
 qwen25-vl-72b-instruct:
   model_name: "Qwen/Qwen2.5-VL-72B-Instruct"
   model_type: vllm
-  path: "/data/wenjie_jacky_mo/models/Qwen2.5-VL-72B-Instruct"
+  path: "/data/huggingface/Qwen/Qwen2.5-VL-72B-Instruct"
   gpu_count: 1
 
 # ------------------------------

@@ -2,8 +2,10 @@ thurstonian_active_learning:
   utility_model_class: "ThurstonianActiveLearningUtilityModel"
   utility_model_arguments:
     unparseable_mode: "distribution"
-    system_message: "You are a helpful assistant." 
-    num_epochs: 1000
+    system_message: "You are a helpful assistant."
+    num_epochs: 1000  # Default fallback if intermediate/final not specified
+    num_epochs_intermediate: 100  # Fast training during active learning iterations
+    num_epochs_final: 1000  # Comprehensive training for final model
     learning_rate: 0.01
     edge_multiplier: 2
     degree: 2
@@ -21,8 +23,10 @@ thurstonian_active_learning_no_flipped_prompts:
   utility_model_class: "ThurstonianActiveLearningUtilityModel"
   utility_model_arguments:
     unparseable_mode: "distribution"
-    system_message: "You are a helpful assistant." 
-    num_epochs: 1000
+    system_message: "You are a helpful assistant."
+    num_epochs: 1000  # Default fallback if intermediate/final not specified
+    num_epochs_intermediate: 100  # Fast training during active learning iterations
+    num_epochs_final: 1000  # Comprehensive training for final model
     learning_rate: 0.01
     edge_multiplier: 2
     degree: 2
@@ -41,8 +45,10 @@ thurstonian_active_learning_k5:
   utility_model_class: "ThurstonianActiveLearningUtilityModel"
   utility_model_arguments:
     unparseable_mode: "distribution"
-    system_message: "You are a helpful assistant." 
-    num_epochs: 1000
+    system_message: "You are a helpful assistant."
+    num_epochs: 1000  # Default fallback if intermediate/final not specified
+    num_epochs_intermediate: 100  # Fast training during active learning iterations
+    num_epochs_final: 1000  # Comprehensive training for final model
     learning_rate: 0.01
     edge_multiplier: 2
     degree: 2
@@ -56,13 +62,36 @@ thurstonian_active_learning_k5:
     holdout_fraction: 0.05
     holdout_seed: 42
 
+thurstonian_active_learning_gpu_optimized:
+  utility_model_class: "ThurstonianActiveLearningUtilityModel"
+  utility_model_arguments:
+    unparseable_mode: "distribution"
+    system_message: "You are a helpful assistant."
+    num_epochs: 100  # Default fallback if intermediate/final not specified
+    num_epochs_intermediate: 50  # Very fast training during iterations for GPU optimization
+    num_epochs_final: 500  # More comprehensive final training
+    learning_rate: 0.1
+    edge_multiplier: 2
+    degree: 2
+    num_edges_per_iteration: 500
+    P: 10.0
+    Q: 20.0
+    K: 3
+    use_pseudolabels: true
+    pseudolabel_confidence_threshold: 0.95
+  preference_graph_arguments:
+    holdout_fraction: 0.05
+    holdout_seed: 42
+
 thurstonian_active_learning_k5_reasoning:
   utility_model_class: "ThurstonianActiveLearningUtilityModel"
   utility_model_arguments:
     unparseable_mode: "distribution"
-    system_message: "You are a helpful assistant." 
+    system_message: "You are a helpful assistant."
     with_reasoning: true
-    num_epochs: 1000
+    num_epochs: 1000  # Default fallback if intermediate/final not specified
+    num_epochs_intermediate: 100  # Fast training during active learning iterations
+    num_epochs_final: 1000  # Comprehensive training for final model
     learning_rate: 0.01
     edge_multiplier: 2
     degree: 2
@@ -80,8 +109,10 @@ thurstonian_active_learning_200edges_per_iteration:
   utility_model_class: "ThurstonianActiveLearningUtilityModel"
   utility_model_arguments:
     unparseable_mode: "distribution"
-    system_message: "You are a helpful assistant." 
-    num_epochs: 1000
+    system_message: "You are a helpful assistant."
+    num_epochs: 1000  # Default fallback if intermediate/final not specified
+    num_epochs_intermediate: 100  # Fast training during active learning iterations
+    num_epochs_final: 1000  # Comprehensive training for final model
     learning_rate: 0.01
     edge_multiplier: 2
     degree: 2
@@ -99,19 +130,20 @@ thurstonian_active_learning_save_ckpt:
   utility_model_class: "ThurstonianActiveLearningUtilityModel"
   utility_model_arguments:
     unparseable_mode: "distribution"
-    system_message: "You are a helpful assistant." 
-    num_epochs: 1000
-    learning_rate: 0.01
+    system_message: "You are a helpful assistant." # num_epochs: 400  # Default fallback if intermediate/final not specified
+    num_epochs_intermediate: 100  # Fast training during active learning iterations
+    num_epochs_final: 1000  # Comprehensive training for final model
+    learning_rate: 0.08
     edge_multiplier: 2
     degree: 2
-    num_edges_per_iteration: 500
+    num_edges_per_iteration: 3000
     P: 10.0
     Q: 20.0
     K: 10
     use_pseudolabels: true
     pseudolabel_confidence_threshold: 0.95
     # checkpointing
-    checkpoint_every: 5
+    checkpoint_every: 1
     keep_last_k: 2
     # checkpoint_dir: "/data/your_custom_dir/ckpts"  # optional override
     resume: true

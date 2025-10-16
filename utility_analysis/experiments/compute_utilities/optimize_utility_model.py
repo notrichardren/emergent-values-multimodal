@@ -22,9 +22,10 @@ async def optimize_utility_model(args):
         options_data = json.load(f)
 
     # If multimodal, coerce options into descriptions that are just placeholders (we send images via messages)
-    comparison_template = None
+    comparison_question = None
     if args.multimodal:
-        comparison_template = comparison_prompt_template_images
+        # Use provided question if available, otherwise use default
+        comparison_question = args.comparison_prompt_question if args.comparison_prompt_question else "Which image do you prefer looking at?"
         # For multimodal, each option item is expected to be a dict like {"images": [path]} or list[str]
         def to_desc(item):
             if isinstance(item, dict) and 'images' in item and len(item['images']) > 0:
@@ -51,7 +52,7 @@ async def optimize_utility_model(args):
         save_dir=args.save_dir,
         save_suffix=args.save_suffix,
         with_reasoning=args.with_reasoning,
-        comparison_prompt_template=comparison_template
+        comparison_prompt_question=comparison_question
     )
 
     end_time = time.time()
@@ -71,6 +72,7 @@ async def main():
     parser.add_argument("--create_agent_config_path", default="../create_agent.yaml", help="Path to create_agent.yaml")
     parser.add_argument("--create_agent_config_key", default=None, help="Key to use in create_agent.yaml (if None, uses 'default_with_reasoning' if with_reasoning=True, else 'default')")
     parser.add_argument("--multimodal", action="store_true", help="Use image-based utility prompts and options")
+    parser.add_argument("--comparison_prompt_question", type=str, help="Override the question part of the comparison prompt for multimodal experiments")
     args = parser.parse_args()
 
     await optimize_utility_model(args)

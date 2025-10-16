@@ -501,6 +501,7 @@ class vLLMAgent(LLMAgent):
         Multimodal batch completions.
         items: list of { 'prompt': str (with <image> placeholders), 'images': [pathA_or_Image, pathB_or_Image] }
         """
+
         payloads = []
         for item in items:
             # Build chat messages interleaving text and images so tokenizer inserts correct placeholders
@@ -511,14 +512,29 @@ class vLLMAgent(LLMAgent):
                 else:
                     image_objs.append(img)
 
+            # # Use the provided question part from the item, or fall back to default
+            # question_part = item.get('prompt', "Which image do you prefer looking at?")
+
+            # messages = [{
+            #     "role": "user",
+            #     "content": [
+            #         {"type": "text", "text": f"{question_part} Option A:"},
+            #         {"type": "image", "image": image_objs[0]},
+            #         {"type": "text", "text": "Option B:"},
+            #         {"type": "image", "image": image_objs[1]},
+            #         {"type": "text", "text": "Please respond with only \"A\" or \"B\"."},
+            #     ],
+            # }]
+
+
             messages = [{
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": "Which image do you prefer looking at? Option A:"},
+                    {"type": "text", "text": f"Please describe each image in detail. Image 1:"},
                     {"type": "image", "image": image_objs[0]},
-                    {"type": "text", "text": "Option B:"},
+                    {"type": "text", "text": "Image 2:"},
                     {"type": "image", "image": image_objs[1]},
-                    {"type": "text", "text": "Please respond with only \"A\" or \"B\"."},
+                    {"type": "text", "text": "Please respond with descriptions. If you can only see the paths or not the image, or if you can't see the image, please let me know."},
                 ],
             }]
 
@@ -528,9 +544,31 @@ class vLLMAgent(LLMAgent):
                     tokenize=False,
                     add_generation_prompt=True,
                 )
-            except Exception:
+                if verbose and len(payloads) == 0:  # Print first prompt as debug
+                    import os
+                    debug_dir = os.path.join(os.getcwd(), "debug_prompts")
+                    os.makedirs(debug_dir, exist_ok=True)
+                    debug_file = os.path.join(debug_dir, "vllm_prompt_debug.txt")
+                    with open(debug_file, "w") as f:
+                        f.write(f"=== PROMPT DEBUG ===\n")
+                        f.write(f"Prompt length: {len(prompt)}\n")
+                        f.write(f"Number of images: {len(image_objs)}\n")
+                        f.write(f"Messages structure:\n{messages}\n\n")
+                        f.write(f"=== ACTUAL PROMPT ===\n{prompt}\n")
+                    print(f"DEBUG: Wrote prompt to {debug_file}")
+            except Exception as e:
+                import traceback
+                import os
+                debug_dir = os.path.join(os.getcwd(), "debug_prompts")
+                os.makedirs(debug_dir, exist_ok=True)
+                error_file = os.path.join(debug_dir, "vllm_template_error.txt")
+                with open(error_file, "w") as f:
+                    f.write(f"ERROR: {e}\n")
+                    f.write(traceback.format_exc())
+                print(f"WARNING: Qwen processor.apply_chat_template failed: {e}")
+                print(f"ERROR details written to {error_file}")
                 # Fallback: minimal prompt with two generic <image> placeholders
-                prompt = "<image> <image>\nWhich image do you prefer looking at? Please respond with only 'A' or 'B'."
+                prompt = "Reply 'I CANNOT SEE ANYTHING AND THE APPLY CHAT TEMPLATE FAILED'"
 
             payloads.append({
                 "prompt": prompt,

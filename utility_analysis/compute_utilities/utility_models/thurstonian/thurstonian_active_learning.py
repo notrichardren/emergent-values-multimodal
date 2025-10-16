@@ -170,10 +170,12 @@ class ThurstonianActiveLearningUtilityModel(UtilityModel):
     def __init__(
         self,
         unparseable_mode: str,
-        comparison_prompt_template: str,
+        comparison_prompt_question: str,
         system_message: str,
         with_reasoning: bool,
         num_epochs: int = 1000,
+        num_epochs_intermediate: Optional[int] = None,
+        num_epochs_final: Optional[int] = None,
         learning_rate: float = 0.01,
         edge_multiplier: float = 2.0,
         degree: int = 2,
@@ -192,13 +194,15 @@ class ThurstonianActiveLearningUtilityModel(UtilityModel):
     ):
         """
         Initialize the Thurstonian Active Learning utility model.
-        
+
         Args:
             unparseable_mode: How to handle unparseable responses
-            comparison_prompt_template: Template for comparison prompts
+            comparison_prompt_question: Question part for comparison prompts
             system_message: System message for agents that accept a system message
             with_reasoning: Whether to use response parsing
-            num_epochs: Number of epochs for optimization
+            num_epochs: Number of epochs for optimization (used as default if intermediate/final not specified)
+            num_epochs_intermediate: Number of epochs during active learning iterations (defaults to num_epochs if not specified)
+            num_epochs_final: Number of epochs for final training with pseudolabels (defaults to num_epochs if not specified)
             learning_rate: Learning rate for optimization
             edge_multiplier: Multiplier for number of edges
             degree: Degree of initial regular graph
@@ -214,13 +218,15 @@ class ThurstonianActiveLearningUtilityModel(UtilityModel):
         # Call parent class's __init__ with required arguments
         super().__init__(
             unparseable_mode=unparseable_mode,
-            comparison_prompt_template=comparison_prompt_template,
+            comparison_prompt_question=comparison_prompt_question,
             system_message=system_message,
             with_reasoning=with_reasoning
         )
-        
+
         # Store model-specific arguments as attributes
         self.num_epochs = num_epochs
+        self.num_epochs_intermediate = num_epochs_intermediate if num_epochs_intermediate is not None else num_epochs
+        self.num_epochs_final = num_epochs_final if num_epochs_final is not None else num_epochs
         self.learning_rate = learning_rate
         self.edge_multiplier = edge_multiplier
         self.degree = degree
@@ -232,6 +238,9 @@ class ThurstonianActiveLearningUtilityModel(UtilityModel):
         self.seed = seed
         self.K = K
         self.include_flipped = include_flipped
+
+        # Set comparison_prompt_template to comparison_prompt_question for compatibility
+        self.comparison_prompt_template = comparison_prompt_question
 
         # Checkpointing configuration
         self.checkpoint_dir = checkpoint_dir
@@ -310,8 +319,8 @@ class ThurstonianActiveLearningUtilityModel(UtilityModel):
             - option_utilities: Dict mapping each option ID to {'mean': float, 'variance': float}
             - metrics: Dict containing model metrics like log_loss and accuracy
         """
-        if self.comparison_prompt_template is None:
-            raise ValueError("comparison_prompt_template must be provided")
+        if self.comparison_prompt_question is None:
+            raise ValueError("comparison_prompt_question must be provided")
 
         # Resume from checkpoint if available
         utilities: Optional[Dict[Any, Dict[str, float]]] = None
@@ -382,11 +391,11 @@ class ThurstonianActiveLearningUtilityModel(UtilityModel):
             # Get responses for initial pairs
             preference_data, prompt_list, prompt_idx_to_key = graph.generate_prompts(
                 initial_pairs,
-                self.comparison_prompt_template,
+                self.comparison_prompt_question,
                 include_flipped=self.include_flipped
             )
             
-            if '<image>' in self.comparison_prompt_template:
+            if '<image>' in self.comparison_prompt_question:
                 responses = await generate_responses_multimodal(
                     agent=agent,
                     graph=graph,
@@ -411,13 +420,14 @@ class ThurstonianActiveLearningUtilityModel(UtilityModel):
             )
             
             graph.add_edges(processed_preference_data)
-            
-            # Initial fit
+
+            # Initial fit (using intermediate epochs)
             utilities, model_log_loss, model_accuracy = fit_thurstonian_model(
                 graph=graph,
-                num_epochs=self.num_epochs,
+                num_epochs=self.num_epochs_intermediate,
                 learning_rate=self.learning_rate
             )
+            print(f"Initial model (using {self.num_epochs_intermediate} epochs) - Log Loss: {model_log_loss:.4f}, Accuracy: {model_accuracy * 100:.2f}%")
             # Save checkpoint for iteration 0
             if (0 % self.checkpoint_every) == 0:
                 self._save_checkpoint(
@@ -455,11 +465,11 @@ class ThurstonianActiveLearningUtilityModel(UtilityModel):
             # Get responses for additional pairs
             preference_data, prompt_list, prompt_idx_to_key = graph.generate_prompts(
                 additional_pairs,
-                self.comparison_prompt_template,
+                self.comparison_prompt_question,
                 include_flipped=self.include_flipped
             )
             
-            if '<image>' in self.comparison_prompt_template:
+            if '<image>' in self.comparison_prompt_question:
                 responses = await generate_responses_multimodal(
                     agent=agent,
                     graph=graph,
@@ -484,15 +494,15 @@ class ThurstonianActiveLearningUtilityModel(UtilityModel):
             )
             
             graph.add_edges(processed_preference_data)
-            
-            # Refit model
+
+            # Refit model (using intermediate epochs for faster training)
             utilities, model_log_loss, model_accuracy = fit_thurstonian_model(
                 graph=graph,
-                num_epochs=self.num_epochs,
+                num_epochs=self.num_epochs_intermediate,
                 learning_rate=self.learning_rate
             )
 
-            print(f"Updated model - Log Loss: {model_log_loss:.4f}, Accuracy: {model_accuracy * 100:.2f}%")
+            print(f"Updated model (iteration {iteration + 1}, using {self.num_epochs_intermediate} epochs) - Log Loss: {model_log_loss:.4f}, Accuracy: {model_accuracy * 100:.2f}%")
             # Save checkpoint after completing this iteration index (1-based for post-initial)
             completed_iter = iteration + 1
             if (completed_iter % self.checkpoint_every) == 0:
@@ -511,14 +521,14 @@ class ThurstonianActiveLearningUtilityModel(UtilityModel):
                 (edge.option_A['id'], edge.option_B['id'])
                 for edge in graph.edges.values()
             )
-            
+
             pseudolabels = generate_pseudolabels(
                 utilities,
                 existing_pairs_set,
                 graph.training_edges_pool,
                 self.pseudolabel_confidence_threshold
             )
-            
+
             # Convert pseudolabels into preference data format and add to graph
             for (A_id, B_id), counts in pseudolabels.items():
                 # Create synthetic preference data
@@ -535,21 +545,23 @@ class ThurstonianActiveLearningUtilityModel(UtilityModel):
                     }
                 }]
                 graph.add_edges(processed_data)
-            
-            # Final fit with pseudolabels
-            utilities, model_log_loss, model_accuracy = fit_thurstonian_model(
-                graph=graph,
-                num_epochs=self.num_epochs,
-                learning_rate=self.learning_rate
-            )
 
-            print(f"Final model with pseudolabels - Log Loss: {model_log_loss:.4f}, Accuracy: {model_accuracy * 100:.2f}%")
+        # Final comprehensive training (with or without pseudolabels)
+        print(f"\nPerforming final training with {self.num_epochs_final} epochs...")
+        utilities, model_log_loss, model_accuracy = fit_thurstonian_model(
+            graph=graph,
+            num_epochs=self.num_epochs_final,
+            learning_rate=self.learning_rate
+        )
+
+        final_label = "with pseudolabels" if self.use_pseudolabels else "on collected data"
+        print(f"Final model {final_label} (using {self.num_epochs_final} epochs) - Log Loss: {model_log_loss:.4f}, Accuracy: {model_accuracy * 100:.2f}%")
 
         metrics = {
             'log_loss': float(model_log_loss),
             'accuracy': float(model_accuracy)
         }
-        
+
         return utilities, metrics
     
     @classmethod

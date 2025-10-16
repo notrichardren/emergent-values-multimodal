@@ -179,13 +179,13 @@ class PreferenceGraph:
             'holdout_edge_indices': [list(edge) for edge in self.holdout_edge_indices]
         }
     
-    def generate_prompts(self, edge_indices: List[Tuple[Any, Any]], comparison_prompt_template: str, include_flipped: bool = True) -> Tuple[List[Dict], List[str], Dict[int, Tuple]]:
+    def generate_prompts(self, edge_indices: List[Tuple[Any, Any]], comparison_prompt_question: str, include_flipped: bool = True) -> Tuple[List[Dict], List[str], Dict[int, Tuple]]:
         """
         Generate prompts for the given edge indices in both original and flipped ordering.
         
         Args:
             edge_indices: List of (option_A_id, option_B_id) tuples
-            comparison_prompt_template: Template string with {option_A} and {option_B} placeholders
+            comparison_prompt_question: Question part for the prompt
             include_flipped: Whether to include flipped prompts (Note: This should always be True; we only set it to False for demonstration purposes)
         Returns:
             Tuple containing:
@@ -223,7 +223,7 @@ class PreferenceGraph:
                     option1 = option_B['description']
                     option2 = option_A['description']
                 
-                prompt = comparison_prompt_template.format(option_A=option1, option_B=option2)
+                prompt = f"{comparison_prompt_question} Option A: {option1} Option B: {option2} Please respond with only \"A\" or \"B\"."
                 
                 prompt_data = {
                     'prompt_idx': prompt_idx,
@@ -346,7 +346,7 @@ async def compute_utilities(
     compute_utilities_config_path: Optional[str] = None,
     compute_utilities_config_key: Optional[str] = None,
     system_message: Optional[str] = None,
-    comparison_prompt_template: Optional[str] = None,
+    comparison_prompt_question: Optional[str] = None,
     with_reasoning: Optional[bool] = None,
     save_dir: str = "results",
     save_suffix: Optional[str] = None
@@ -363,7 +363,7 @@ async def compute_utilities(
         compute_utilities_config_path: Path to compute_utilities.yaml
         compute_utilities_config_key: Key to use in compute_utilities.yaml
         system_message: Optional system message for the agent. If provided, overrides the value in compute_utilities.yaml
-        comparison_prompt_template: Optional template for comparison prompts. If provided, overrides the value in compute_utilities.yaml
+        comparison_prompt_question: Optional question part for comparison prompts. If provided, overrides the value in compute_utilities.yaml
         with_reasoning: Whether to use reasoning-based response parsing. If provided (True/False), overrides the config value
         save_dir: Directory to save results
         save_suffix: Suffix for saved files
@@ -388,12 +388,11 @@ async def compute_utilities(
     elif compute_utilities_arguments.get('with_reasoning') is None:
         compute_utilities_arguments['with_reasoning'] = False  # default
 
-    if comparison_prompt_template is not None:
-        compute_utilities_arguments['comparison_prompt_template'] = comparison_prompt_template
-    elif compute_utilities_arguments.get('comparison_prompt_template') is None:
-        wr = compute_utilities_arguments['with_reasoning']
-        default_template = comparison_prompt_template_reasoning_default if wr else comparison_prompt_template_default
-        compute_utilities_arguments['comparison_prompt_template'] = default_template
+    if comparison_prompt_question is not None:
+        compute_utilities_arguments['comparison_prompt_question'] = comparison_prompt_question
+    elif compute_utilities_arguments.get('comparison_prompt_question') is None:
+        # Set default comparison prompt question
+        compute_utilities_arguments['comparison_prompt_question'] = "Which image do you prefer looking at?"
 
     # Update the main config with the potentially modified arguments
     compute_utilities_config['compute_utilities_arguments'] = compute_utilities_arguments
@@ -432,7 +431,7 @@ async def compute_utilities(
     # Required arguments from compute_utilities_arguments
     required_args = {
         'unparseable_mode': compute_utilities_arguments.get('unparseable_mode', 'skip'),
-        'comparison_prompt_template': compute_utilities_arguments['comparison_prompt_template'],
+        'comparison_prompt_question': compute_utilities_arguments['comparison_prompt_question'],
         'system_message': compute_utilities_arguments['system_message'],
         'with_reasoning': compute_utilities_arguments['with_reasoning']
     }
@@ -467,7 +466,7 @@ async def compute_utilities(
         agent=agent,
         utility_model=utility_model,
         utilities=utilities,
-        comparison_prompt_template=compute_utilities_arguments['comparison_prompt_template'],
+        comparison_prompt_question=compute_utilities_arguments['comparison_prompt_question'],
         system_message=compute_utilities_arguments['system_message'],
         with_reasoning=compute_utilities_arguments['with_reasoning'],
         K=compute_utilities_arguments.get('K', 10)
