@@ -243,9 +243,6 @@ def main():
     # New: output path override
     parser.add_argument("--output_path", type=str,
                         help="Override the experiment save_dir (supports <model_key> templating)")
-    # New: comparison prompt question override
-    parser.add_argument("--comparison_prompt_question", type=str,
-                        help="Override the question part of the comparison prompt for multimodal experiments")
     
     args = parser.parse_args()
     
@@ -304,10 +301,6 @@ def main():
                 # Inject multimodal flag into experiment args if set
                 if args.multimodal:
                     experiment_args["multimodal"] = True
-                
-                # Inject comparison prompt question if provided
-                if args.comparison_prompt_question:
-                    experiment_args["comparison_prompt_question"] = args.comparison_prompt_question
                 
                 # Merge in additional config if provided
                 if args.config:

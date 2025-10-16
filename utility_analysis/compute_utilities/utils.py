@@ -608,7 +608,7 @@ async def evaluate_holdout_set(
     agent,
     utility_model,
     utilities,
-    comparison_prompt_question,
+    comparison_prompt_template,
     system_message=None,
     with_reasoning=False,
     K=10
@@ -636,16 +636,16 @@ async def evaluate_holdout_set(
     # Generate prompts for holdout edges
     holdout_preference_data, holdout_prompts, holdout_prompt_idx_to_key = graph.generate_prompts(
         list(graph.holdout_edge_indices),
-        comparison_prompt_question
+        comparison_prompt_template
     )
     
     # Generate responses for holdout edges
-    if '<image>' in comparison_prompt_question:
+    if '<image>' in comparison_prompt_template:
         holdout_responses = await generate_responses_multimodal(
             agent=agent,
             graph=graph,
             prompt_idx_to_key=holdout_prompt_idx_to_key,
-            comparison_prompt_template=comparison_prompt_question,
+            comparison_prompt_template=comparison_prompt_template,
             K=K,
         )
     else:

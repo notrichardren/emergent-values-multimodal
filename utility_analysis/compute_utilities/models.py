@@ -14,7 +14,7 @@ class UtilityModel(ABC):
     def __init__(
         self,
         unparseable_mode: str,
-        comparison_prompt_question: str,
+        comparison_prompt_template: str,
         system_message: str,
         with_reasoning: bool,
         **kwargs
@@ -24,7 +24,7 @@ class UtilityModel(ABC):
         
         Args:
             unparseable_mode: How to handle unparseable responses (can be "skip", "random", or "distribution")
-            comparison_prompt_question: Question part for comparison prompts
+            comparison_prompt_template: Template for comparison prompts
             system_message: System message for agents that accept a system message
             with_reasoning: Whether to use response parsing for comparison_prompt_template_reasoning_default
             **kwargs: Additional arguments specific to each utility model implementation
@@ -36,7 +36,7 @@ class UtilityModel(ABC):
         
         # Store required arguments as attributes
         self.unparseable_mode = unparseable_mode
-        self.comparison_prompt_question = comparison_prompt_question
+        self.comparison_prompt_template = comparison_prompt_template
         self.system_message = system_message
         self.with_reasoning = with_reasoning
 
