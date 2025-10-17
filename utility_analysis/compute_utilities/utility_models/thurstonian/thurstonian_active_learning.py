@@ -174,6 +174,7 @@ class ThurstonianActiveLearningUtilityModel(UtilityModel):
         system_message: str,
         with_reasoning: bool,
         num_epochs: int = 1000,
+        final_num_epochs: Optional[int] = None,
         learning_rate: float = 0.01,
         edge_multiplier: float = 2.0,
         degree: int = 2,
@@ -192,13 +193,14 @@ class ThurstonianActiveLearningUtilityModel(UtilityModel):
     ):
         """
         Initialize the Thurstonian Active Learning utility model.
-        
+
         Args:
             unparseable_mode: How to handle unparseable responses
             comparison_prompt_template: Template for comparison prompts
             system_message: System message for agents that accept a system message
             with_reasoning: Whether to use response parsing
-            num_epochs: Number of epochs for optimization
+            num_epochs: Number of epochs for intermediate optimization during active learning iterations
+            final_num_epochs: Number of epochs for final optimization (defaults to num_epochs if not specified)
             learning_rate: Learning rate for optimization
             edge_multiplier: Multiplier for number of edges
             degree: Degree of initial regular graph
@@ -218,9 +220,10 @@ class ThurstonianActiveLearningUtilityModel(UtilityModel):
             system_message=system_message,
             with_reasoning=with_reasoning
         )
-        
+
         # Store model-specific arguments as attributes
         self.num_epochs = num_epochs
+        self.final_num_epochs = final_num_epochs if final_num_epochs is not None else num_epochs
         self.learning_rate = learning_rate
         self.edge_multiplier = edge_multiplier
         self.degree = degree
@@ -271,6 +274,7 @@ class ThurstonianActiveLearningUtilityModel(UtilityModel):
             "graph_data": graph.export_data(),
             "model_args": {
                 "num_epochs": self.num_epochs,
+                "final_num_epochs": self.final_num_epochs,
                 "learning_rate": self.learning_rate,
                 "edge_multiplier": self.edge_multiplier,
                 "degree": self.degree,
@@ -504,6 +508,15 @@ class ThurstonianActiveLearningUtilityModel(UtilityModel):
                     model_accuracy=model_accuracy,
                 )
 
+        # Final fit with all collected data using final_num_epochs
+        print(f"\nPerforming final fit with {self.final_num_epochs} epochs on all collected data...")
+        utilities, model_log_loss, model_accuracy = fit_thurstonian_model(
+            graph=graph,
+            num_epochs=self.final_num_epochs,
+            learning_rate=self.learning_rate
+        )
+        print(f"Final model - Log Loss: {model_log_loss:.4f}, Accuracy: {model_accuracy * 100:.2f}%")
+
         # Optional: Generate pseudolabels
         if self.use_pseudolabels:
             print("\nGenerating pseudolabels using the current Thurstonian model.")
@@ -536,10 +549,11 @@ class ThurstonianActiveLearningUtilityModel(UtilityModel):
                 }]
                 graph.add_edges(processed_data)
             
-            # Final fit with pseudolabels
+            # Final fit with pseudolabels using final_num_epochs
+            print(f"\nPerforming final fit with pseudolabels using {self.final_num_epochs} epochs...")
             utilities, model_log_loss, model_accuracy = fit_thurstonian_model(
                 graph=graph,
-                num_epochs=self.num_epochs,
+                num_epochs=self.final_num_epochs,
                 learning_rate=self.learning_rate
             )
 
