@@ -312,7 +312,8 @@ async def generate_responses_multimodal(
         opened = []
         for p in img_list:
             try:
-                opened.append(PILImage.open(p))
+                with PILImage.open(p) as img:
+                    opened.append(img.copy())
             except Exception:
                 opened.append(p)
         items_by_prompt.append({

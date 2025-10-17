@@ -430,7 +430,13 @@ class GeminiAgent(LLMAgent):
         for message in messages:
             content = message['content']
             image_path = message.get('image_path')
-            image = Image.open(image_path) if image_path else None
+            image = None
+            if image_path:
+                try:
+                    with Image.open(image_path) as img:
+                        image = img.copy()
+                except Exception:
+                    image = image_path
             parts = [content, image] if image else [content]
 
             message['parts'] = parts
@@ -507,7 +513,11 @@ class vLLMAgent(LLMAgent):
             image_objs = []
             for img in item.get('images', []):
                 if isinstance(img, str):
-                    image_objs.append(Image.open(img))
+                    try:
+                        with Image.open(img) as loaded_img:
+                            image_objs.append(loaded_img.copy())
+                    except Exception:
+                        image_objs.append(img)
                 else:
                     image_objs.append(img)
 
