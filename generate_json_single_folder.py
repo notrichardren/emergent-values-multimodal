@@ -73,7 +73,7 @@ def create_image_json(image_folder, output_json_path):
 
     # args = parser.parse_args()
 
-image_folder = "big_runs"
+image_folder = "/data/superstimuli_group/politicians_large"
 output_json = "big_runs/final_images.json"
 
 create_image_json(image_folder, output_json)

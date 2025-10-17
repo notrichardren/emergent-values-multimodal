@@ -65,10 +65,10 @@ def process_images_in_directory(input_dir, output_dir='cropped', size=(256, 256)
 
 # 1. Define the name of the folder where your original images are.
 #    Create this folder in the same directory as your script and put your images inside it.
-INPUT_FOLDER = 'run_big/intermediate_images' 
+INPUT_FOLDER = "/data/superstimuli_group/politicians_large"
 
 # 2. Define the name of the folder for the results.
-OUTPUT_FOLDER = 'run_small/final_images'
+OUTPUT_FOLDER = "/data/superstimuli_group/politicians_large/256"
 
 # 3. Run the function.
 process_images_in_directory(INPUT_FOLDER, OUTPUT_FOLDER)

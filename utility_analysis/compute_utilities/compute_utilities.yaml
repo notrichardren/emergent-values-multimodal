@@ -119,3 +119,28 @@ thurstonian_active_learning_save_ckpt:
   preference_graph_arguments:
     holdout_fraction: 0.05
     holdout_seed: 42
+
+thurstonian_active_learning_save_ckpt_small:
+  utility_model_class: "ThurstonianActiveLearningUtilityModel"
+  utility_model_arguments:
+    unparseable_mode: "distribution"
+    system_message: "You are a helpful assistant."
+    num_epochs: 100         # Fast intermediate fits during active learning
+    final_num_epochs: 2000  # Thorough final fit with all collected data
+    learning_rate: 0.01
+    edge_multiplier: 2
+    degree: 2
+    num_edges_per_iteration: 500
+    P: 10.0
+    Q: 20.0
+    K: 10
+    use_pseudolabels: true
+    pseudolabel_confidence_threshold: 0.95
+    # checkpointing
+    checkpoint_every: 1
+    keep_last_k: 2
+    # checkpoint_dir: "/data/your_custom_dir/ckpts"  # optional override
+    resume: true
+  preference_graph_arguments:
+    holdout_fraction: 0.05
+    holdout_seed: 42
