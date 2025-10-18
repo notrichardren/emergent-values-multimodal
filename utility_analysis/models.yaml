@@ -346,6 +346,12 @@ qwen25-vl-72b-instruct:
   path: "/data/huggingface/Qwen/Qwen2.5-VL-72B-Instruct"
   gpu_count: 1
 
+internvl3-38b-instruct:
+  model_name: "OpenGVLab/InternVL3-38B"
+  model_type: vllm
+  path: "/data/huggingface/models--OpenGVLab--InternVL3-38B-Instruct/snapshots/81c9a040f587e63dc46f128efac04e3f86952847"
+  gpu_count: 1
+
 # ------------------------------
 # Google Gemma
 # ------------------------------
@@ -388,6 +394,13 @@ gemma-2-27b-it:
   model_name: "google/gemma-2-27b-it"
   model_type: vllm
   path: "/data/huggingface/models--google--gemma-2-27b-it/snapshots/aaf20e6b9f4c0fcf043f6fb2a2068419086d77b0"
+  gpu_count: 4
+  accepts_system_message: False
+
+gemma-3-27b-it:
+  model_name: "google/gemma-3-27b-it"
+  model_type: vllm
+  path: "/data/huggingface/models--google--gemma-3-27b-it/snapshots/005ad3404e59d6023443cb575daa05336842228a"
   gpu_count: 4
   accepts_system_message: False
 
